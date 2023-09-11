@@ -6,6 +6,7 @@ enum OpCode {
   MUL = "*",
   DIV = "/",
   POP = ".",
+  S = "S",
   EXIT = "EXIT"
 }
 
@@ -13,6 +14,7 @@ class Forth {
   private stack: number[] = [];
   private rl: readline.Interface;
   private twoNumbers: number[] = [];
+  private lineCount = 0;
 
   constructor() {
     this.stack = [];
@@ -30,7 +32,7 @@ class Forth {
 
   private async loop() {
     try {
-      const answer = await this.rl.question("> ");
+      const answer = await this.rl.question(`(${this.lineCount}) > `);
       this.validate(answer);
       this.loop();
     } catch (err) {
@@ -42,9 +44,9 @@ class Forth {
     if (!isNaN(Number(value))) {
       this.push(Number(value));
     } else {
-      console.log(value);
       this.execute(value.toString());
     }
+    this.lineCount++;
   }
 
   private push(value: number) {
@@ -64,35 +66,40 @@ class Forth {
       this.pop();
     } else if (OpCode.EXIT === value) {
       process.exit(0);
+    } else if (OpCode.S === value) {
+      console.log(this.stack.join(" ") + " ok");
     }
   }
 
-  private add() {
+  private setTwoNumbers() {
     this.twoNumbers[0] = this.stack[this.stack.length - 2];
     this.twoNumbers[1] = this.stack[this.stack.length - 1];
+    this.stack.pop();
+    this.stack.pop();
+  }
+
+  private add() {
+    this.setTwoNumbers();
     this.push(this.twoNumbers[0] + this.twoNumbers[1]);
   }
 
   private sub() {
-    this.twoNumbers[0] = this.stack[this.stack.length - 2];
-    this.twoNumbers[1] = this.stack[this.stack.length - 1];
+    this.setTwoNumbers();
     this.push(this.twoNumbers[0] - this.twoNumbers[1]);
   }
 
   private mul() {
-    this.twoNumbers[0] = this.stack[this.stack.length - 2];
-    this.twoNumbers[1] = this.stack[this.stack.length - 1];
+    this.setTwoNumbers();
     this.push(this.twoNumbers[0] * this.twoNumbers[1]);
   }
 
   private div() {
-    this.twoNumbers[0] = this.stack[this.stack.length - 2];
-    this.twoNumbers[1] = this.stack[this.stack.length - 1];
+    this.setTwoNumbers();
     this.push(this.twoNumbers[0] / this.twoNumbers[1]);
   }
 
   private pop() {
-    console.log(this.stack.pop() + "ok");
+    console.log(this.stack.pop() + " ok");
   }
 }
 
