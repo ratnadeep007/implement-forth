@@ -2,8 +2,12 @@
   "name": "tforth",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "start": "bun index.ts"
+  },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "sinon": "^15.2.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

@@ -24,19 +24,25 @@ export class Forth {
     })
   }
 
-  start() {
-    console.log("TFORTH - Typescript Forth");
-    console.log("Forth Language implemented in Typescript");
-    this.loop();
+  start(value?: string) {
+    if (!value && value?.length !== 0) {
+      console.log("TFORTH - Typescript Forth");
+      console.log("Forth Language implemented in Typescript");
+    }
+    this.loop(value);
   }
 
-  private async loop() {
-    try {
-      const answer = await this.rl.question(`(${this.lineCount}) > `);
-      this.validate(answer);
-      this.loop();
-    } catch (err) {
-      console.error(err);
+  private async loop(value?: string) {
+    if (value) {
+      this.validate(value);
+    } else if (value?.length !== 0) {
+      try {
+        const answer = await this.rl.question(`(${this.lineCount}) > `);
+        this.validate(answer);
+        this.loop();
+      } catch (err) {
+        console.error(err);
+      }
     }
   }
 
