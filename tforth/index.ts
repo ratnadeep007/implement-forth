@@ -41,6 +41,17 @@ class Forth {
   }
 
   private validate(value: string) {
+    if (value.includes(" ")) {
+      const values = value.split(" ");
+      for (const value of values) {
+        this.operate(value);
+      }
+    } else {
+      this.operate(value);
+    }
+  }
+
+  private operate(value: string) {
     if (!isNaN(Number(value))) {
       this.push(Number(value));
     } else {
