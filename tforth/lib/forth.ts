@@ -1,4 +1,6 @@
 import * as readline from "readline/promises";
+import { isNumber } from "./utils.ts";
+import { type } from "os";
 
 enum OpCode {
   ADD = "+",
@@ -10,10 +12,26 @@ enum OpCode {
   EXIT = "EXIT"
 }
 
+enum TokenType {
+  NUMBER = "NUMBER",
+  OPERATOR = "OPERATOR",
+  NULL = "NULL"
+}
+
+class Token {
+  type: TokenType;
+  value: number | string;
+
+  constructor(type: TokenType, value: number | string) {
+    this.type = type;
+    this.value = value;
+  }
+}
+
 export class Forth {
-  private stack: number[] = [];
+  private stack: Token[] = [];
   private rl: readline.Interface;
-  private twoNumbers: number[] = [];
+  private twoNumbers: Token[] = [];
   private lineCount = 0;
 
   constructor() {
@@ -29,93 +47,136 @@ export class Forth {
       console.log("TFORTH - Typescript Forth");
       console.log("Forth Language implemented in Typescript");
     }
-    this.loop(value);
+    this.walk(value ?? "");
   }
 
-  private async loop(value?: string) {
-    if (value) {
-      this.validate(value);
-    } else if (value?.length !== 0) {
-      try {
-        const answer = await this.rl.question(`(${this.lineCount}) > `);
-        this.validate(answer);
-        this.loop();
-      } catch (err) {
-        console.error(err);
+  private walk(values: string) {
+    for (const value of values) {
+      if (value !== " ") {
+        if (value.charCodeAt(0) === 10) {
+          this.execute();
+        } else if (isNumber(value)) {
+          this.push(Number(value));
+        } else {
+          this.push(value);
+        }
+      }
+    }
+    console.log(this.stack);
+  }
+
+  private print(token?: Token) {
+    if (token) {
+      console.log(token.value + " ok");
+    } else {
+      const output = this.stack.map(el => el.value + " ");
+      console.log(output + "ok");
+    }
+  }
+
+  private execute() {
+    for (const token of this.stack) {
+      if (token.type === TokenType.OPERATOR) {
+        switch (token.value) {
+          case OpCode.ADD:
+            this.add();
+            break;
+          case OpCode.SUB:
+            this.sub();
+            break;
+          case OpCode.MUL:
+            this.mul();
+            break;
+          case OpCode.DIV:
+            this.div();
+            break;
+          case OpCode.POP:
+            this.pop();
+            break;
+          case OpCode.S:
+            this.print();
+            break;
+
+        }
       }
     }
   }
 
-  private validate(value: string) {
-    if (value.includes(" ")) {
-      const values = value.split(" ");
-      for (const value of values) {
-        this.operate(value);
+  private push(value: number | string) {
+    if (typeof value === "number") {
+      this.stack.push(new Token(TokenType.NUMBER, value));
+    } else {
+      switch (value) {
+        case OpCode.ADD:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.ADD));
+          break;
+        case OpCode.SUB:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.SUB));
+          break;
+        case OpCode.MUL:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.MUL));
+          break;
+        case OpCode.DIV:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.DIV));
+          break;
+        case OpCode.POP:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.POP));
+          break;
+        case OpCode.S:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.S));
+          break;
+        case OpCode.EXIT:
+          this.stack.push(new Token(TokenType.OPERATOR, OpCode.EXIT));
+          break;
       }
-    } else {
-      this.operate(value);
-    }
-  }
-
-  private operate(value: string) {
-    if (!isNaN(Number(value))) {
-      this.push(Number(value));
-    } else {
-      this.execute(value.toString());
-    }
-    this.lineCount++;
-  }
-
-  private push(value: number) {
-    this.stack.push(value);
-  }
-
-  private execute(value: string) {
-    if (OpCode.ADD === value) {
-      this.add();
-    } else if (OpCode.SUB === value) {
-      this.sub();
-    } else if (OpCode.MUL === value) {
-      this.mul();
-    } else if (OpCode.DIV === value) {
-      this.div();
-    } else if (OpCode.POP === value) {
-      this.pop();
-    } else if (OpCode.EXIT === value) {
-      process.exit(0);
-    } else if (OpCode.S === value) {
-      console.log(this.stack.join(" ") + " ok");
     }
   }
 
   private setTwoNumbers() {
-    this.twoNumbers[0] = this.stack[this.stack.length - 2];
-    this.twoNumbers[1] = this.stack[this.stack.length - 1];
-    this.stack.pop();
-    this.stack.pop();
+    if (this.stack.length > 2) {
+      const revStack = this.stack;
+      revStack.reverse();
+      for (const tok of revStack) {
+        if (tok.type === TokenType.NUMBER) {
+          this.twoNumbers.push(tok);
+        }
+        if (this.twoNumbers.length === 2) {
+          break;
+        }
+      }
+    }
   }
 
   private add() {
     this.setTwoNumbers();
-    this.push(this.twoNumbers[0] + this.twoNumbers[1]);
+    console.log(this.twoNumbers);
+    if (this.twoNumbers[0].value === TokenType.NUMBER && this.twoNumbers[1].value === TokenType.NUMBER) {
+      this.push(Number(this.twoNumbers[0].value) + Number(this.twoNumbers[1].value));
+    }
   }
 
   private sub() {
     this.setTwoNumbers();
-    this.push(this.twoNumbers[0] - this.twoNumbers[1]);
+    if (this.twoNumbers[0].value === TokenType.NUMBER && this.twoNumbers[1].value === TokenType.NUMBER) {
+      this.push(Number(this.twoNumbers[0].value) - Number(this.twoNumbers[1].value));
+    }
   }
 
   private mul() {
     this.setTwoNumbers();
-    this.push(this.twoNumbers[0] * this.twoNumbers[1]);
+    if (this.twoNumbers[0].value === TokenType.NUMBER && this.twoNumbers[1].value === TokenType.NUMBER) {
+      this.push(Number(this.twoNumbers[0].value) * Number(this.twoNumbers[1].value));
+    }
   }
 
   private div() {
     this.setTwoNumbers();
-    this.push(this.twoNumbers[0] / this.twoNumbers[1]);
+    if (this.twoNumbers[0].value === TokenType.NUMBER && this.twoNumbers[1].value === TokenType.NUMBER) {
+      this.push(Number(this.twoNumbers[0].value) / Number(this.twoNumbers[1].value));
+    }
   }
 
   private pop() {
-    console.log(this.stack.pop() + " ok");
+    this.print(this.stack.pop());
   }
 }

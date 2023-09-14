@@ -13,9 +13,7 @@ if (args.length > 2) {
       const forth = new Forth();
       const file = Bun.file(arg);
       const contents = await file.text();
-      for (const content of contents.split("\n")) {
-        forth.start(content);
-      }
+      forth.start(contents);
     }
   }
   process.exit(0);
